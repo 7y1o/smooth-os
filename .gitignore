@@ -1,0 +1,11 @@
+/*
+
+# Exclude dirs
+!/src
+
+# Exclude files
+!/.gitignore
+!/bochs_config
+!/debug.sh
+!/run.sh
+!/Makefile

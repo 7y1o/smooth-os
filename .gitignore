@@ -10,3 +10,6 @@
 !/debug.sh
 !/run.sh
 !/Makefile
+
+# Include some files
+/src/bootloader/stage2/*.err

@@ -2,6 +2,7 @@
 
 # Exclude dirs
 !/src
+!/tools
 
 # Exclude files
 !/.gitignore

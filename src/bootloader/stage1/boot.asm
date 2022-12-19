@@ -99,30 +99,30 @@ start:                          ; entry point
     mov bx, buffer              ; es:bx = buffer
     call disk_read
 
-    ; --------------------------- search for kernel.bin
+    ; --------------------------- search for s2.bin
     xor bx, bx
     mov di, buffer
 
-.search_kernel:
-    mov si, file_kernel_bin
+.search_s2:
+    mov si, file_s2_bin
     mov cx, 11                  ; compare up to 11 characters
     push di
     repe cmpsb
     pop di
-    je .found_kernel
+    je .found_s2
 
     add di, 32
     inc bx
     cmp bx, [bdb_dec]
-    jl .search_kernel
+    jl .search_s2
 
-    ; --------------------------- kernel not found
-    jmp kernel_not_found_error
+    ; --------------------------- s2 not found
+    jmp s2_not_found_error
 
-.found_kernel:
+.found_s2:
     ; --------------------------- di should have the address to the entry
     mov ax, [di + 26]           ; first logical cluster field (offset 26)
-    mov [kernel_c], ax
+    mov [s2_c], ax
 
     ; --------------------------- load FAT from disk into memory
     mov ax, [bdb_rs]
@@ -131,13 +131,13 @@ start:                          ; entry point
     mov dl, [ebr_dn]
     call disk_read
 
-    ; --------------------------- read kernel and process FAT chain
-    mov bx, KERNEL_LOAD_SEGMENT
+    ; --------------------------- read s2 and process FAT chain
+    mov bx, STAGE2_LOAD_SEGMENT
     mov es, bx
-    mov bx, KERNEL_LOAD_OFFSET
+    mov bx, STAGE2_LOAD_OFFSET
 
-.load_kernel_loop:
-    mov ax, [kernel_c]
+.load_s2_loop:
+    mov ax, [s2_c]
 
     ; --------------------------- SORRY FOR THIS HARDCODE
     add ax, 31                  ; first cluster = (cluster number - 2) * sectors_per_cluster + start_sector
@@ -149,7 +149,7 @@ start:                          ; entry point
     add bx, [bdb_bps]
 
     ; --------------------------- compute location of next cluster
-    mov ax, [kernel_c]
+    mov ax, [s2_c]
     mov cx, 3
     mul cx
     mov cx, 2
@@ -173,17 +173,17 @@ start:                          ; entry point
     cmp ax, 0x0FF8
     jae .read_finish
 
-    mov [kernel_c], ax
-    jmp .load_kernel_loop
+    mov [s2_c], ax
+    jmp .load_s2_loop
 
 .read_finish:
     mov dl, [ebr_dn]
     
-    mov ax, KERNEL_LOAD_SEGMENT ; set segment registers
+    mov ax, STAGE2_LOAD_SEGMENT ; set segment registers
     mov ds, ax
     mov es, ax
 
-    jmp KERNEL_LOAD_SEGMENT:KERNEL_LOAD_OFFSET
+    jmp STAGE2_LOAD_SEGMENT:STAGE2_LOAD_OFFSET
     jmp wait_key_and_reboot
 
     cli
@@ -196,8 +196,8 @@ floppy_error:
     call puts
     jmp wait_key_and_reboot
 
-kernel_not_found_error:
-    mov si, msg_kernel_not_found
+s2_not_found_error:
+    mov si, msg_s2_not_found
     call puts
     jmp wait_key_and_reboot
 
@@ -332,13 +332,13 @@ disk_reset:
 
 msg_loading:            db 'Loading...', ENDL, 0
 msg_read_failed:        db 'Read from disk failed', ENDL, 0
-msg_kernel_not_found:   db 'STAGE2.BIN file not found!', ENDL, 0
+msg_s2_not_found:   db 'STAGE2.BIN file not found!', ENDL, 0
 
-file_kernel_bin:        db 'STAGE2  BIN'
-kernel_c:               dw 0
+file_s2_bin:        db 'STAGE2  BIN'
+s2_c:               dw 0
 
-KERNEL_LOAD_SEGMENT     equ 0x2000
-KERNEL_LOAD_OFFSET      equ 0x0000
+STAGE2_LOAD_SEGMENT     equ 0x2000
+STAGE2_LOAD_OFFSET      equ 0x0000
 
 
 times 510-($-$$) db 0
